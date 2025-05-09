@@ -1,7 +1,34 @@
--- Webhook config
-local webhookUrl = "SEU_WEBHOOK_AQUI"
---!native
---50/50 this breaks but it's a beta for a reason!
+-- Webhook opcional (substitua com seu link se quiser usar)
+local webhookUrl = "SEU_WEBHOOK_AQUI" -- ex: "https://discord.com/api/webhooks/..."
+
+-- Controle de antispam para remotes
+local lastRemoteCalls = {}
+local MIN_SPAM_DELAY = 1 -- segundos
+
+-- Sistema de drag universal para PC e Mobile
+local dragToggle, dragStart, startPos
+
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragToggle = true
+        dragStart = input.Position
+        startPos = Background.Position
+    end
+end)
+
+TopBar.InputChanged:Connect(function(input)
+    if dragToggle and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        Background.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragToggle = false
+    end
+end)
+
 
 if getgenv().SimpleSpyExecuted and type(getgenv().SimpleSpyShutdown) == "function" then
     getgenv().SimpleSpyShutdown()
