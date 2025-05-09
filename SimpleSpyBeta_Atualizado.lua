@@ -1,34 +1,7 @@
--- Webhook opcional (substitua com seu link se quiser usar)
-local webhookUrl = "SEU_WEBHOOK_AQUI" -- ex: "https://discord.com/api/webhooks/..."
-
--- Controle de antispam para remotes
-local lastRemoteCalls = {}
-local MIN_SPAM_DELAY = 1 -- segundos
-
--- Sistema de drag universal para PC e Mobile
-local dragToggle, dragStart, startPos
-
-TopBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragToggle = true
-        dragStart = input.Position
-        startPos = Background.Position
-    end
-end)
-
-TopBar.InputChanged:Connect(function(input)
-    if dragToggle and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        Background.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragToggle = false
-    end
-end)
-
+-- Webhook config
+local webhookUrl = "SEU_WEBHOOK_AQUI"
+--!native
+--50/50 this breaks but it's a beta for a reason!
 
 if getgenv().SimpleSpyExecuted and type(getgenv().SimpleSpyShutdown) == "function" then
     getgenv().SimpleSpyShutdown()
@@ -519,51 +492,59 @@ end
 --- Drags gui (so long as mouse is held down)
 --- @param input InputObject
 function onBarInput(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local lastPos = UserInputService:GetMouseLocation()
-        local mainPos = Background.AbsolutePosition
-        local offset = mainPos - lastPos
-        local currentPos = offset + lastPos
-        if not connections["drag"] then
-            connections["drag"] = RunService.RenderStepped:Connect(function()
-                local newPos = UserInputService:GetMouseLocation()
-                if newPos ~= lastPos then
-                    local currentX = (offset + newPos).X
-                    local currentY = (offset + newPos).Y
-                    local viewportSize = workspace.CurrentCamera.ViewportSize
-                    if (currentX < 0 and currentX < currentPos.X) or (currentX > (viewportSize.X - (sideClosed and 131 or TopBar.AbsoluteSize.X)) and currentX > currentPos.X) then
-                        if currentX < 0 then
-                            currentX = 0
-                        else
-                            currentX = viewportSize.X - (sideClosed and 131 or TopBar.AbsoluteSize.X)
-                        end
-                    end
-                    if (currentY < 0 and currentY < currentPos.Y) or (currentY > (viewportSize.Y - (closed and 19 or Background.AbsoluteSize.Y) - GuiInset.Y) and currentY > currentPos.Y) then
-                        if currentY < 0 then
-                            currentY = 0
-                        else
-                            currentY = viewportSize.Y - (closed and 19 or Background.AbsoluteSize.Y) - GuiInset.Y
-                        end
-                    end
-                    currentPos = Vector2.new(currentX, currentY)
-                    lastPos = newPos
-                    TweenService.Create(TweenService, Background, TweenInfo.new(0.1), {Position = UDim2.new(0, currentPos.X, 0, currentPos.Y)}):Play()
-                end
-                    -- if input.UserInputState ~= Enum.UserInputState.Begin then
-                    --     RunService.UnbindFromRenderStep(RunService, "drag")
-                    -- end
-            end)
-        end
-        table.insert(connections, UserInputService.InputEnded:Connect(function(inputE)
-            if input == inputE then
-                if connections["drag"] then
-                    connections["drag"]:Disconnect()
-                    connections["drag"] = nil
-                end
-            end
-        end))
-    end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		local lastPos = input.Position
+		local mainPos = Background.AbsolutePosition
+		local offset = mainPos - lastPos
+		local currentPos = offset + lastPos
+
+		if not connections["drag"] then
+			connections["drag"] = RunService.RenderStepped:Connect(function()
+				local newPos = input.UserInputType == Enum.UserInputType.Touch
+					and input.Position
+					or UserInputService:GetMouseLocation()
+
+				if newPos ~= lastPos then
+					local currentX = (offset + newPos).X
+					local currentY = (offset + newPos).Y
+
+					local viewportSize = Camera.ViewportSize
+					local guiWidth = sideClosed and 131 or TopBar.AbsoluteSize.X
+					local guiHeight = closed and 19 or Background.AbsoluteSize.Y
+
+					-- Limitar horizontalmente
+					if currentX < 0 then
+						currentX = 0
+					elseif currentX > viewportSize.X - guiWidth then
+						currentX = viewportSize.X - guiWidth
+					end
+
+					-- Limitar verticalmente
+					if currentY < 0 then
+						currentY = 0
+					elseif currentY > viewportSize.Y - guiHeight - GuiInset.Y then
+						currentY = viewportSize.Y - guiHeight - GuiInset.Y
+					end
+
+					currentPos = Vector2.new(currentX, currentY)
+					lastPos = newPos
+
+					TweenService:Create(Background, TweenInfo.new(0.1), {
+						Position = UDim2.new(0, currentPos.X, 0, currentPos.Y)
+					}):Play()
+				end
+			end)
+		end
+	end
 end
+
+-- Desativa drag quando soltar o mouse ou dedo
+UserInputService.InputEnded:Connect(function(input)
+	if connections["drag"] and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+		connections["drag"]:Disconnect()
+		connections["drag"] = nil
+	end
+end)
 
 --- Fades out the table of elements (and makes them invisible), returns a function to make them visible again
 function fadeOut(elements)
