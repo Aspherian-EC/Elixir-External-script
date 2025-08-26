@@ -1,8 +1,8 @@
 {
-  "PremiumUsers": [
-    498905192,
-    111111111,
-    222222222,
-    333333333
-  ]
+  "PremiumUsers": {
+    "498905192": "Aspherian",
+    "111111111": "PlayerFulano",
+    "222222222": "playerciclano",
+    "333333333": "playersla"
+  }
 }
